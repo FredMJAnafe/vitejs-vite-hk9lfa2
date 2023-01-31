@@ -36,6 +36,18 @@
       id="formMaitre2"
     >
     </FormulaireMaitre>
+    <FormulaireFormation
+      v-if="etatFormulaire == 'cerfa.formation'"
+      v-on:remetEtatInitial="this.remetEtatInitial"
+      id="formFormation"
+    >
+    </FormulaireFormation>
+    <FormulaireEtat
+      v-if="etatFormulaire == 'cerfa.etat'"
+      v-on:remetEtatInitial="this.remetEtatInitial"
+      id="formEtat"
+    >
+    </FormulaireEtat>
   </div>
   <table id="tablefacturier" @click="editFacturier">
     <thead id="theadTableauFacturier">
@@ -137,7 +149,7 @@
             icon="fa-file-circle-plus"
           />
         </td>
-        <td>
+        <td class="editable" data-prop="cerfa.formation">
           <span v-if="item.cerfa.formation"
             >{{ item.cerfa.formation.intituleQualification }}
           </span>
@@ -188,7 +200,15 @@
             icon="fa-file-circle-plus"
           />
         </td>
-        <td>{{ item.opco }}</td>
+        <td class="editable" data-prop="opco">
+          <span v-if="item.opco">{{ item.opco }}</span>
+          <font-awesome-icon
+            v-else
+            @click="$emit(this.evenement)"
+            class="fontIcone"
+            icon="fa-file-circle-plus"
+          />
+        </td>
         <td>{{ resteAPayer(item.echeances) }}</td>
         <td>
           <span
@@ -198,7 +218,15 @@
           >
         </td>
         <td></td>
-        <td>{{ item.cerfa.etat }}</td>
+        <td class="editable" data-prop="cerfa.etat">
+          <span v-if="item.cerfa.etat">{{ item.cerfa.etat }}</span>
+          <font-awesome-icon
+            v-else
+            @click="$emit(this.evenement)"
+            class="fontIcone"
+            icon="fa-file-circle-plus"
+          />
+        </td>
       </tr>
     </tbody>
   </table>
@@ -231,7 +259,8 @@ import FormulaireOpco from '@/components/Controler/backOffice/FormulaireOpco.vue
 import FormulaireEmployeur from '@/components/Controler/backOffice/FormulaireEmployeur.vue';
 import FormulaireMaitre from '@/components/Controler/backOffice/FormulaireMaitre.vue';
 import FormulaireContrat from '@/components/Controler/backOffice/FormulaireContrat.vue';
-//import formulaireContrat from "@/components/Controler/backOffice/formulaireContrat.vue";
+import FormulaireFormation from '@/components/Controler/backOffice/FormulaireFormation.vue';
+import FormulaireEtat from '@/components/Controler/backOffice/FormulaireEtat.vue';
 import construitURLService from '@/services/construitURL.service.vue';
 import configuration from '@/administration/configuration.vue';
 import connexionAPIService from '@/services/connexionAPI.service.vue';
@@ -251,6 +280,8 @@ export default {
     FormulaireContrat,
     FormulaireOpco,
     FormulaireApprenti,
+    FormulaireFormation,
+    FormulaireEtat,
     elementContratTableauFacturier,
     MiseAJourService,
   },
@@ -269,6 +300,7 @@ export default {
       itemEdite: null,
       idCourant: 0,
       indexCourant: 0,
+      tdCourant: null,
     };
   },
   mounted() {
@@ -290,10 +322,20 @@ export default {
   },
   methods: {
     onMAJOK(e) {
-      let i = this.indexCourant;//this.items.indexOf(this.itemEdite);
+      let i = this.indexCourant; //this.items.indexOf(this.itemEdite);
       if (i > -1) {
         this.items[i] = this.itemEdite = e.detail.reponse.extra_info;
       }
+      this.resetSelection();
+    },
+    resetSelection() {
+      this.itemEdite = null;
+      this.idCourant = 0;
+      this.indexCourant = -1;
+      if (this.tdCourant) {
+        this.tdCourant.classList.remove('selected');
+      }
+      this.tdCourant = null;
       this.changeEtatFormulaire('');
     },
     initFormulaire(formCompmonent = null, formid = '', _obj = null) {
@@ -333,21 +375,34 @@ export default {
       if (t.classList && t.classList.contains('editable')) {
         let numItem = parseInt(t.parentNode.getAttribute('data-num')),
           prop = t.getAttribute('data-prop'),
-          item = this.items[numItem];
+          item = this.items[numItem],
+          nouveauTd = t != this.tdCourant;
         if (item) {
-          let p = prop.split('.');
-          this.itemEdite = p.reduce(function (a, c) {
-            if (!a.hasOwnProperty(c)) {
-              a[c] = {};
+          if (this.tdCourant) {
+            this.tdCourant.classList.remove('selected');
+          }
+          if (!nouveauTd) {
+            this.resetSelection();
+          } else {
+            let p = prop.split('.');
+            this.itemEdite = p.reduce(function (a, c) {
+              if (!a.hasOwnProperty(c)) {
+                a[c] = {};
+              }
+              return a[c];
+            }, item);
+            this.idCourant =
+              typeof item._id == 'string'
+                ? item._id
+                : "ObjectId('" + item._id.$oid + "')"; //!!!!!!
+            this.indexCourant = numItem;
+            if (this.tdCourant) {
+              this.tdCourant.classList.remove('selected');
             }
-            return a[c];
-          }, item);
-          this.idCourant =
-            typeof item._id == 'string'
-              ? item._id
-              : "ObjectId('" + item._id.$oid + "')";
-          this.indexCourant = numItem;
-          this.changeEtatFormulaire(prop);
+            this.tdCourant = t;
+            this.tdCourant.classList.add('selected');
+            this.changeEtatFormulaire(prop);
+          }
         }
       }
     },
@@ -751,7 +806,8 @@ select {
   width: 40px;
   margin: 5px;
 }
-.editable:hover {
+.editable:hover,
+.editable.selected {
   cursor: pointer;
   color: white;
   background: blue;

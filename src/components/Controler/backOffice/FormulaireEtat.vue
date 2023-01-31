@@ -1,20 +1,23 @@
 <template>
   <form :data-service="action" class="formulaireAjoutFacturier">
     <fieldset class="titreFormulaireFacturier">
-      <legend>
-        S&eacute;lection OPCO 
-      </legend>
-      <input type="hidden" name="__base__" value="" />
+      <legend>Etat du dossier</legend>
+      <input type="hidden" name="__base__" value="cerfa" />
       <input type="hidden" name="__id__" value="0" />
       <div class="detailApprenti">
         <div class="_inputBoxFacturier">
           <span class="detailFacturier"> </span>
-          <select
-            name="opco"
-            required
-          >
-          <option value="0">Choisir</option>
-            <option v-for="o in listeOpcos" :value="o.nom">{{o.nom}}</option>
+          <select name="etat" required>
+            <option value="0">Choisir</option>
+            <option value="0">INITIAL (0)</option>
+            <option value="TRANSMISSION_EN_COURS">TRANSMISSION EN COURS</option>
+            <option value="TRANSMIS">TRANSMIS</option>
+            <option value="EN_COURS_INSTRUCTION">INSTRUCTION EN COURS</option>
+            <option value="ENGAGE">ENGAG&Eacute;</option>
+            <option value="ANNULE">ANNUL&Eacute;</option>
+            <option value="REFUSE">REFUS&Eacute;</option>
+            <option value="RUPTURE">RUPTURE</option>
+            <option value="SOLDE">SOLD&Eacute;</option>
           </select>
         </div>
       </div>
@@ -52,11 +55,10 @@ export default {
 
   data() {
     return {
-      listeOpcos:this.$parent.opcos,
       action: construitURLService.methods.construitURLConnectionBack(
         'dossier',
         configuration.data().urlPossibles.modifier
-      )
+      ),
     };
   },
   mounted() {
@@ -86,6 +88,4 @@ export default {
   display: flex;
   padding: 10px;
 }*/
-
 </style>
-
